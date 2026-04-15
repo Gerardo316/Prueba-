@@ -1,0 +1,54 @@
+$table->string('title');
+$table->text('description')->nullable();
+$table->decimal('priority_score', 4, 2)->default(0);
+$table->unsignedTinyInteger('complexity');
+$table->unsignedTinyInteger('urgency');
+
+
+class TaskObserver {
+    public function saving(Task $task) {
+        $task->priority_score = ($task->complexity * 0.4) + ($task->urgency * 0.6);
+    }
+}
+
+
+Task::observe(TaskObserver::class);
+
+
+composer require laravel/sanctum
+php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
+php artisan migrate
+
+
+'api' => [
+    \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+    'throttle:api',
+    \Illuminate\Routing\Middleware\SubstituteBindings::class,
+],
+
+
+it('calculates priority score correctly', function () {
+    $task = Task::create([
+        'title' => 'Test',
+        'description' => 'Demo',
+        'complexity' => 5,
+        'urgency' => 10,
+    ]);
+
+    expect($task->priority_score)->toBe(8.0);
+});
+
+
+import { signal } from '@angular/core';
+
+export class TaskService {
+  tasks = signal<Task[]>([]);
+
+  loadTasks() {
+    fetch('http://127.0.0.1:8000/api/tasks', {
+      headers: { Authorization: 'Bearer hardcoded_token_for_test' }
+    })
+    .then(res => res.json())
+    .then(data => this.tasks.set(data));
+  }
+}
